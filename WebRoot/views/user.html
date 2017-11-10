@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>客户信息管理</title>
+<link rel="stylesheet" type="text/css" href="../ui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="../ui/themes/icon.css">
+<script type="text/javascript" src="../ui/jquery.min.js"></script>
+<script type="text/javascript" src="../ui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../ui/locale/easyui-lang-zh_CN.js"></script>
+
+<script>
+		function submitForm(){
+			// submit the form    
+			$('#ff').submit();
+		}
+		
+		
+		$(function(){
+			$('#w').window('close');		//确保页面加载时，添加窗口关闭
+		//-------------------------------------------------------------
+			$('#ff').form({    
+		  	url:'../userAction_regist',    
+		    onSubmit: function(){    
+		        // do some check    
+		        // return false to prevent submit; 
+		        return true;   
+		    },    
+		    success:function(data){ 	//	完成表单提交，需要完成的项目 
+		       //清空表单数据
+		       $('#ff').form('clear');
+		       //关闭窗口
+		       $('#w').window('close');
+		       //重新列表查询  
+		       $('#test').datagrid('reload');
+		        
+		    }    
+			});    
+		  
+		//---------------------------------------------------------------
+			$('#test').datagrid({
+				singleSelect: true,
+				title:'用户列表',	//表格标题
+				iconCls:'icon-tip',	//小图标
+				nowrap: true,	//是否换行
+				striped: true,	//斑马线 隔行变色
+				collapsible:true,	//表格折叠
+				url:'../userAction_list',	//关键属性，指定表格数据加载的路径
+				sortName: 'userId',	//使用哪列进行排序
+				sortOrder: 'asc',	//desc/asc
+				remoteSort: false,	//是否支持远程排序
+				idField:'userId',		//id列
+				frozenColumns:[[
+	                {field:'ck',checkbox:true},
+	                {field:'userId',title:'用户id',width:100,sortable:true}
+				]],
+				
+				columns:[[
+					{field:'userName',title:'用户名',width:120},
+					{field:'userCode',title:'登录名',width:220},
+				]],
+				pagination:true,
+				rownumbers:true,
+				toolbar:[{
+					id:'btnadd',
+					text:'添加用户',
+					iconCls:'icon-add',
+					handler:function(){
+						$('#ff').form('clear');
+						$('#w').window('open');	//点击添加用户按钮，打开窗口
+						$('#btnsave').linkbutton('enable');
+						
+					}
+				},{
+					id:'btncut',
+					text:'修改用户',
+					iconCls:'icon-save',
+					handler:function(){
+						$('#btnsave').linkbutton('enable');	//按钮点击后能否继续点击
+						//获得用户选中的id
+						var userId = getSelected();
+						//用户未选择客户
+						if(userId==null){
+							alert("请选择用户");
+							return;
+						}
+						//根据userId查询该对象，并回显
+						$('#ff').form('load','../userAction_getUserById?userId='+userId);
+						$('#w').window('open');
+					}
+				},'-',{
+					id:'btnsave',
+					text:'删除用户',
+					disabled:false,	//该按钮能否操作，true表示不能
+					iconCls:'icon-cut',
+					handler:function(){
+						$('#btnsave').linkbutton('enable');
+						//获取用户id
+						//判断是否选择
+						//获得用户选中的id
+						var userId = getSelected();
+						//用户未选择客户
+						if(userId==null){
+							alert("请选择用户");
+							return;
+						}
+						//ajax发送异步请求
+						$.post("../userAction_delete?userId="+userId, function(data){
+								//删除成功后,刷新列表
+							 $('#test').datagrid('reload'); //提交成功,重新加载列表数据   
+							});
+					}
+				}]
+			});
+			var p = $('#test').datagrid('getPager');
+			$(p).pagination({
+				onBeforeRefresh:function(){
+					alert('before refresh');
+				}
+			});
+		});
+		function resize(){
+			$('#test').datagrid('resize', {
+				width:700,
+				height:400
+			});
+		}
+		function getSelected(){
+			var selected = $('#test').datagrid('getSelected');
+			if (selected){
+				return selected.userId;	//返回用户选择的数据
+			}
+		}
+		function getSelections(){
+			var ids = [];
+			var rows = $('#test').datagrid('getSelections');
+			for(var i=0;i<rows.length;i++){
+				ids.push(rows[i].code);
+			}
+			alert(ids.join(':'));
+		}
+		function clearSelections(){
+			$('#test').datagrid('clearSelections');
+		}
+		function selectRow(){
+			$('#test').datagrid('selectRow',2);
+		}
+		function selectRecord(){
+			$('#test').datagrid('selectRecord','002');
+		}
+		function unselectRow(){
+			$('#test').datagrid('unselectRow',2);
+		}
+		function mergeCells(){
+			$('#test').datagrid('mergeCells',{
+				index:2,
+				field:'addr',
+				rowspan:2,
+				colspan:2
+			});
+		}
+	</script>
+</head>
+<body>
+
+	<table id="test"></table>
+	<div id="w" class="easyui-window" title="Basic Window" data-options="iconCls:'icon-save'" style="width:500px;height:200px;padding:10px;">
+		<!-- 将表单嵌套到添加窗口中 -->
+		 <form id="ff" method="post">   
+		 	<input type="hidden" name="userId" >
+		    <div>   
+		        <label for="name">用户名称:</label>   
+		        <input class="easyui-validatebox" type="text" name="userName" data-options="required:true" />   
+		    </div>   
+		    <div>   
+		        <label for="email">用户密码:</label>   
+		        <input class="easyui-validatebox" type="password" name="userPassword" data-options="required:true" />   
+		    </div>
+		    <div>   
+		        <label for="email">用户昵称:</label>   
+		        <input class="easyui-validatebox" type="text" name="userCode" data-options="required:true" />   
+		    </div> 
+		     <div>
+	            <input type="button" value="提交" onclick="submitForm();" >
+	        </div>      
+		</form>  
+	</div>
+</body>
+</html>
